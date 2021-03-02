@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "447092679532",
+    "project_id": "messenger-d6504",
+    "storage_bucket": "messenger-d6504.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:447092679532:android:5cc09a794d93e0dbeac949",
+        "android_client_info": {
+          "package_name": "com.messenger"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "447092679532-b6uvsntlinkaififhks5mgit8ks5fqu5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqp2IdZqg8GdEw7vyrHt1FXlO60NJ9FTQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "447092679532-b6uvsntlinkaififhks5mgit8ks5fqu5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
