@@ -215,7 +215,7 @@ class _LoginScreenState extends State<LoginScreen> {
       },
       verificationFailed: (FirebaseAuthException e) {
         _utils.hideProgressDialog();
-        _utils.alertDialog(e.toString());
+        _utils.alertDialog(e.toString().split("]")[1]);
       },
       codeSent: (String verificationId, int resendToken) {
         _utils.hideProgressDialog();
@@ -224,9 +224,7 @@ class _LoginScreenState extends State<LoginScreen> {
             arguments: PassUserArguments(phoneNumber,verificationId));
       },
       timeout: const Duration(seconds: 30),
-      codeAutoRetrievalTimeout: (String verificationId) {
-        //_utils.hideProgressDialog();
-      },
+      codeAutoRetrievalTimeout: (String verificationId) {},
     );
   }
 

@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_countdown_timer/countdown_timer_controller.dart';
+import 'package:flutter_countdown_timer/current_remaining_time.dart';
+import 'package:flutter_countdown_timer/flutter_countdown_timer.dart';
 import 'package:messenger/Global/Colors.dart';
 import 'package:messenger/Global/Routes.dart';
 import 'package:messenger/Global/ScreenSizeUtils.dart';
@@ -30,6 +35,10 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
   List<dynamic> userList = [];
   String _verificationId = '';
 
+  CountdownTimerController controller;
+  int _endTime = DateTime.now().millisecondsSinceEpoch + 1000 * 80;
+  bool isTimerVisible = false;
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +48,11 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
     setState(() {
       _verificationId = widget.verificationId;
     });
+    controller = CountdownTimerController(endTime: _endTime, onEnd: _onEnd);
+    controller.start();
+    setState(() {
+      isTimerVisible = true;
+    });
   }
 
   _initializeFirebase() async {
@@ -47,7 +61,6 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     // This is used for device compatibility responsive UI
     ScreenUtil.instance.init(context);
 
@@ -105,7 +118,40 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
                       padding:
                           EdgeInsets.symmetric(horizontal: SV.setWidth(50)),
                       child: _verificationTextFieldWidget()),
-                  SizedBox(height: SV.setHeight(80)),
+                  Visibility(
+                    visible: isTimerVisible,
+                    child: Center(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: SV.setHeight(90)),
+                        child: CountdownTimer(
+                          endTime: _endTime,
+                          widgetBuilder: (_, CurrentRemainingTime time) {
+                            if (time == null) {
+                              return Container();
+                            } else {
+                              String minute = time.min == null
+                                  ? "00"
+                                  : "0" + time.min.toString();
+                              String second = time.sec == null
+                                  ? "00"
+                                  : time.sec.toString().length == 1
+                                      ? "0" + time.sec.toString()
+                                      : time.sec.toString();
+                              return Text(
+                                minute + " : " + second,
+                                style: TextStyle(
+                                    color: Colors.black,
+                                    fontFamily: Strings.fontName,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14.0),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: SV.setHeight(70)),
                   _resendCodeButton()
                 ],
               ),
@@ -157,24 +203,28 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
   }
 
   // button - design of resend code button
-  _resendCodeButton(){
+  _resendCodeButton() {
     return Center(
       child: Container(
         width: SV.setWidth(550),
         child: RaisedButton(
-          onPressed: () {
-            _utils.isNetwotkAvailable(true).then((value) => _checkInternetForResendCode(value));
-          },
+          onPressed: isTimerVisible == true
+              ? null
+              : () {
+                  _utils
+                      .isNetwotkAvailable(true)
+                      .then((value) => _checkInternetForResendCode(value));
+                },
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.all(Radius.circular(8))),
           padding: const EdgeInsets.all(0.0),
           child: Container(
-            constraints: const BoxConstraints(
-                minWidth: 88.0, minHeight: 42.0),
+            constraints: const BoxConstraints(minWidth: 88.0, minHeight: 42.0),
             decoration: BoxDecoration(
-                color: AppColors.buttonColor,
-                borderRadius:
-                BorderRadius.all(Radius.circular(8))),
+                color: isTimerVisible != true
+                    ? AppColors.buttonColor
+                    : AppColors.grey,
+                borderRadius: BorderRadius.all(Radius.circular(8))),
             alignment: Alignment.center,
             child: Text(
               Strings.resendCode,
@@ -191,10 +241,9 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
   }
 
   // button - design of verify button
-  _verifyCodeButton(){
+  _verifyCodeButton() {
     return Padding(
-      padding:
-      EdgeInsets.fromLTRB(SV.setWidth(50), 0, SV.setWidth(50), 0),
+      padding: EdgeInsets.fromLTRB(SV.setWidth(50), 0, SV.setWidth(50), 0),
       child: RaisedButton(
         onPressed: () {
           _checkValidation();
@@ -203,8 +252,7 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
             borderRadius: BorderRadius.all(Radius.circular(8))),
         padding: const EdgeInsets.all(0.0),
         child: Container(
-          constraints:
-          const BoxConstraints(minWidth: 88.0, minHeight: 42.0),
+          constraints: const BoxConstraints(minWidth: 88.0, minHeight: 42.0),
           decoration: BoxDecoration(
               color: AppColors.buttonColor,
               borderRadius: BorderRadius.all(Radius.circular(8))),
@@ -223,8 +271,8 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
   }
 
   // check internet for resend code
-  _checkInternetForResendCode(isAvailable){
-    if(isAvailable){
+  _checkInternetForResendCode(isAvailable) {
+    if (isAvailable) {
       _utils.showProgressDialog();
       _resendCode();
     }
@@ -247,26 +295,39 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
     }
   }
 
+  // when countdown timer will be completed then it's call
+  _onEnd() {
+    setState(() {
+      isTimerVisible = false;
+    });
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
   // resend code using firebase authentication
   _resendCode() async {
     await FirebaseAuth.instance.verifyPhoneNumber(
-      phoneNumber: '+91 '+widget.mobileNo,
+      phoneNumber: '+91 ' + widget.mobileNo,
       verificationCompleted: (PhoneAuthCredential credential) {
         _utils.hideProgressDialog();
       },
       verificationFailed: (FirebaseAuthException e) {
         _utils.hideProgressDialog();
-        _utils.alertDialog(e.toString());
+        _utils.alertDialog(e.toString().split("]")[1]);
       },
       codeSent: (String verificationId, int resendToken) {
         _utils.hideProgressDialog();
         setState(() {
+          isTimerVisible = true;
           _verificationId = verificationId;
         });
       },
       timeout: const Duration(seconds: 30),
       codeAutoRetrievalTimeout: (String verificationId) {
-        //_utils.hideProgressDialog();
         setState(() {
           _verificationId = verificationId;
         });
@@ -279,7 +340,8 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
     try {
       PhoneAuthCredential phoneAuthCredential = PhoneAuthProvider.credential(
           verificationId: _verificationId, smsCode: verificationCode);
-      final User user = (await firebaseAuth.signInWithCredential(phoneAuthCredential)).user;
+      final User user =
+          (await firebaseAuth.signInWithCredential(phoneAuthCredential)).user;
       print(user.uid);
       if (_utils.isValidationEmpty(user.uid)) {
         _utils.hideProgressDialog();
@@ -305,7 +367,6 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
       }
       _utils.hideProgressDialog();
       _checkUserAndRedirect();
-
     });
   }
 
@@ -325,11 +386,11 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
         }
       }
       if (isMatch) {
-        _saveUserData(tempUserPos).then((value) => Navigator.of(context).pushNamedAndRemoveUntil(
-            Routes.userListScreen, (Route<dynamic> route) => false));
+        _saveUserData(tempUserPos).then((value) => Navigator.of(context)
+            .pushNamedAndRemoveUntil(
+                Routes.userListScreen, (Route<dynamic> route) => false));
       } else {
-        Navigator.pushNamed(
-            context, Routes.registrationScreen,
+        Navigator.pushNamed(context, Routes.registrationScreen,
             arguments: widget.mobileNo);
       }
     } else {
