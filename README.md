@@ -1,4 +1,4 @@
-# messenger
+# Firebase Messenger
 
 A new Flutter application.
 
